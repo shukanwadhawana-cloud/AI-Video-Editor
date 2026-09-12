@@ -33,6 +33,9 @@ jobs:
       - name: Smoke — iPad Phase 1 editor contract
         run: npx tsx apps/ipad/scripts/smoke-phase1.ts
 
+      - name: Smoke — iPad Phase 2 natural-language editing contract
+        run: npx tsx apps/ipad/scripts/smoke-phase2.ts
+
       # The media-free / self-synthesizing smoke subset (no model downloads).
       - name: Smoke — compositor plan (pure logic)
         run: npx tsx apps/desktop/scripts/smoke-composite.ts
