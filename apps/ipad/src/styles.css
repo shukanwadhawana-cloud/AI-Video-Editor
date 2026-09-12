@@ -3,11 +3,12 @@
 html, body, #root { margin: 0; min-height: 100%; background: #0b0b0f; }
 body { overscroll-behavior: none; }
 button, input { font: inherit; }
-.app { min-height: 100dvh; padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); display: flex; flex-direction: column; gap: 14px; }
+.app { min-height: 100dvh; padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-left)); display: flex; flex-direction: column; gap: 14px; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .brand { font-size: 22px; font-weight: 750; letter-spacing: -.02em; }
 .sub { margin-top: 3px; color: #92929b; font-size: 12px; }
 button { border: 0; cursor: pointer; }
+button:disabled { cursor: default; }
 .import, .primary { background: #f5f5f7; color: #111116; border-radius: 12px; padding: 12px 16px; font-weight: 700; }
 .import:disabled, .primary:disabled { opacity: .45; }
 .command-bar { border: 1px solid #25252c; background: #111116; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
@@ -27,9 +28,10 @@ button { border: 0; cursor: pointer; }
 .empty { width: 100%; height: 100%; min-height: 48dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #f5f5f7; background: transparent; }
 .empty-icon { width: 58px; height: 58px; border: 1px solid #3a3a44; border-radius: 50%; display: grid; place-items: center; font-size: 28px; color: #b8b8c0; }
 .empty span:last-child { color: #777780; font-size: 13px; }
-.controls { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.controls { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
 .panel-title { font-size: 18px; font-weight: 750; }
 .plan-badge { display: inline-flex; align-self: flex-start; border: 1px solid #35353e; background: #1a1a20; border-radius: 999px; padding: 6px 9px; color: #c7c7ce; font-size: 11px; }
+.selected-name { color: #b8b8c0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .time-row { display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 8px; color: #92929b; font-size: 12px; }
 .time-row b { color: #f5f5f7; font-variant-numeric: tabular-nums; }
 input[type=range] { width: 100%; accent-color: #fff; }
@@ -37,9 +39,19 @@ input[type=range] { width: 100%; accent-color: #fff; }
 .notice { color: #777780; font-size: 11px; line-height: 1.45; }
 .timeline { padding: 14px 16px 18px; }
 .timeline-head { display: flex; justify-content: space-between; gap: 10px; color: #9999a2; font-size: 12px; margin-bottom: 12px; }
-.track { position: relative; height: 52px; border-radius: 10px; background: repeating-linear-gradient(90deg, #1b1b22 0 42px, #17171d 42px 84px); overflow: hidden; }
-.track-fill { position: absolute; inset-block: 5px; background: #4a4a55; border: 2px solid #f5f5f7; border-radius: 8px; }
-.handle { position: absolute; top: 0; bottom: 0; width: 4px; background: #fff; transform: translateX(-2px); box-shadow: 0 0 12px #fff8; }
+.clip-list { display: flex; flex-direction: column; gap: 7px; max-height: 28dvh; overflow: auto; }
+.clip-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid #25252c; background: #15151b; border-radius: 12px; cursor: pointer; }
+.clip-row.active { border-color: #5b5b66; background: #1a1a21; }
+.clip-index { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: #292931; color: #c9c9d0; font-size: 11px; font-weight: 750; }
+.clip-main { min-width: 0; }
+.clip-name { font-size: 12px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clip-meta { margin-top: 2px; color: #777780; font-size: 10px; }
+.clip-track { position: relative; height: 10px; margin-top: 6px; border-radius: 5px; background: #0d0d11; overflow: hidden; }
+.segment { position: absolute; top: 1px; bottom: 1px; min-width: 2px; background: #d9d9df; border-radius: 4px; }
+.clip-actions { display: flex; gap: 4px; }
+.clip-actions button { width: 28px; height: 28px; border-radius: 8px; background: #24242b; color: #d0d0d7; font-weight: 750; }
+.clip-actions button:disabled { opacity: .3; }
+.timeline-empty { padding: 18px; text-align: center; color: #777780; font-size: 12px; border: 1px dashed #303039; border-radius: 12px; }
 footer { color: #777780; font-size: 12px; min-height: 18px; }
 @media (max-width: 800px) {
   .workspace { grid-template-columns: 1fr; }
