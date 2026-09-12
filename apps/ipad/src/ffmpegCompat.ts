@@ -1,11 +1,11 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 
-// Keep FFmpeg on the same deployed origin. Blob-wrapping the ESM core can
-// break the worker's dynamic import on Safari/iOS; direct same-origin URLs
-// avoid that worker/blob boundary entirely.
-const CORE_BASE = new URL("./", document.baseURI).href;
-const CORE_JS = new URL("ffmpeg-core.js", CORE_BASE).href;
-const CORE_WASM = new URL("ffmpeg-core.wasm", CORE_BASE).href;
+// Cloudflare Pages cannot serve the ~31 MiB FFmpeg WASM file because Pages
+// limits individual assets to 25 MiB. Load the ESM core directly from the
+// public jsDelivr CDN instead of wrapping it in blob URLs.
+const CORE_BASE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
+const CORE_JS = `${CORE_BASE}/ffmpeg-core.js`;
+const CORE_WASM = `${CORE_BASE}/ffmpeg-core.wasm`;
 const originalLoad = FFmpeg.prototype.load;
 const originalExec = FFmpeg.prototype.exec;
 
