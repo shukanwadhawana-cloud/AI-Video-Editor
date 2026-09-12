@@ -8,10 +8,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="AI Video Editor" />
     <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <title>AI Video Editor</title>
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+      }
+    </script>
     <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>
