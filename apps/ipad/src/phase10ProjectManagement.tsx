@@ -4,105 +4,22 @@ import { clearProject, saveProject, type ProjectSnapshot } from "./projectStore"
 type Segment = { start: number; end: number };
 type Clip = { id: string; file: File; url: string; duration: number; name: string; segments: Segment[] };
 type Caption = { id: string; clipId: string; start: number; end: number; text: string };
-
-type Args = {
-  clips: Clip[];
-  captions: Caption[];
-  selectedId: string | null;
-  vertical: boolean;
-  setClips: React.Dispatch<React.SetStateAction<Clip[]>>;
-  setCaptions: React.Dispatch<React.SetStateAction<Caption[]>>;
-  setSelectedId: React.Dispatch<React.SetStateAction<string | null>>;
-  setVertical: React.Dispatch<React.SetStateAction<boolean>>;
-  setStatus: React.Dispatch<React.SetStateAction<string>>;
-  busy: boolean;
-};
-
+type Args = { clips: Clip[]; captions: Caption[]; selectedId: string | null; vertical: boolean; setClips: React.Dispatch<React.SetStateAction<Clip[]>>; setCaptions: React.Dispatch<React.SetStateAction<Caption[]>>; setSelectedId: React.Dispatch<React.SetStateAction<string | null>>; setVertical: React.Dispatch<React.SetStateAction<boolean>>; setStatus: React.Dispatch<React.SetStateAction<string>>; busy: boolean };
 const NAME_KEY = "ai-video-editor-project-name";
 const defaultName = "Untitled Project";
 const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 export function usePhase10ProjectManagement(args: Args) {
   const { clips, captions, selectedId, vertical, setClips, setCaptions, setSelectedId, setVertical, setStatus, busy } = args;
-  const [projectName, setProjectName] = React.useState(() => {
-    try { return localStorage.getItem(NAME_KEY) || defaultName; } catch { return defaultName; }
-  });
+  const [projectName, setProjectName] = React.useState(() => { try { return localStorage.getItem(NAME_KEY) || defaultName; } catch { return defaultName; } });
   const [nameDraft, setNameDraft] = React.useState(projectName);
   const [projectActionBusy, setProjectActionBusy] = React.useState(false);
-
   React.useEffect(() => { setNameDraft(projectName); }, [projectName]);
-
-  const renameProject = React.useCallback(() => {
-    const next = nameDraft.trim().slice(0, 80) || defaultName;
-    setProjectName(next);
-    try { localStorage.setItem(NAME_KEY, next); } catch { /* metadata remains in memory */ }
-    setStatus(`Project renamed • ${next}`);
-  }, [nameDraft, setStatus]);
-
-  const resetTimeline = React.useCallback(() => {
-    if (!clips.length) { setStatus("Nothing to reset"); return; }
-    setClips((current) => current.map((clip) => ({ ...clip, segments: [{ start: 0, end: clip.duration }] })));
-    setCaptions([]);
-    setVertical(false);
-    setStatus("Edits reset • imported media kept");
-  }, [clips.length, setCaptions, setClips, setStatus, setVertical]);
-
-  const newProject = React.useCallback(async () => {
-    if (projectActionBusy || busy) return;
-    if (clips.length && !window.confirm("Start a new project? The current local project will be cleared.")) return;
-    setProjectActionBusy(true);
-    try {
-      await clearProject();
-      clips.forEach((clip) => { if (clip.url) URL.revokeObjectURL(clip.url); });
-      setClips([]); setCaptions([]); setSelectedId(null); setVertical(false);
-      setProjectName(defaultName); setNameDraft(defaultName);
-      try { localStorage.removeItem(NAME_KEY); } catch { /* ignore storage failure */ }
-      setStatus("New project ready • local workspace cleared");
-    } catch (error) {
-      console.error(error);
-      setStatus("Could not clear local project storage");
-    } finally { setProjectActionBusy(false); }
-  }, [busy, clips, projectActionBusy, setCaptions, setClips, setSelectedId, setStatus, setVertical]);
-
-  const duplicateProject = React.useCallback(async () => {
-    if (projectActionBusy || busy || !clips.length) return;
-    setProjectActionBusy(true);
-    try {
-      const snapshot: ProjectSnapshot = {
-        version: 1,
-        clips: clips.map((clip) => ({ id: clip.id, duration: clip.duration, name: clip.name, type: clip.file.type, segments: clip.segments.map((segment) => ({ ...segment })) })),
-        captions: captions.map((caption) => ({ ...caption })),
-        selectedId,
-        vertical,
-      };
-      await saveProject(snapshot, clips.map((clip) => ({ id: clip.id, file: clip.file })));
-      const nextName = `${projectName} copy`.slice(0, 80);
-      setProjectName(nextName); setNameDraft(nextName);
-      try { localStorage.setItem(NAME_KEY, nextName); } catch { /* ignore metadata failure */ }
-      setStatus(`Project duplicated locally • ${nextName}`);
-    } catch (error) {
-      console.error(error);
-      setStatus("Project duplicate failed • local project was not changed");
-    } finally { setProjectActionBusy(false); }
-  }, [busy, captions, clips, projectActionBusy, projectName, selectedId, setStatus, vertical]);
-
-  const duplicateClip = React.useCallback((index: number) => {
-    if (busy || projectActionBusy || index < 0 || index >= clips.length) return;
-    const source = clips[index];
-    const copy: Clip = { ...source, id: makeId(), name: `${source.name} copy`, segments: source.segments.map((segment) => ({ ...segment })) };
-    setClips((current) => [...current.slice(0, index + 1), copy, ...current.slice(index + 1)]);
-    setSelectedId(copy.id);
-    setStatus(`Duplicated clip ${index + 1}`);
-  }, [busy, clips, projectActionBusy, setClips, setSelectedId, setStatus]);
-
-  const renameClip = React.useCallback((index: number) => {
-    if (busy || projectActionBusy || index < 0 || index >= clips.length) return;
-    const clip = clips[index];
-    const nextName = window.prompt("Clip name", clip.name)?.trim();
-    if (!nextName || nextName === clip.name) return;
-    setClips((current) => current.map((item, i) => i === index ? { ...item, name: nextName.slice(0, 120) } : item));
-    setStatus(`Clip renamed • ${nextName.slice(0, 120)}`);
-  }, [busy, clips, projectActionBusy, setClips, setStatus]);
-
+  const renameProject = React.useCallback(() => { const next = nameDraft.trim().slice(0, 80) || defaultName; setProjectName(next); try { localStorage.setItem(NAME_KEY, next); } catch {} setStatus(`Project renamed • ${next}`); }, [nameDraft, setStatus]);
+  const resetTimeline = React.useCallback(() => { if (!clips.length) { setStatus("Nothing to reset"); return; } setClips((current) => current.map((clip) => ({ ...clip, segments: [{ start: 0, end: clip.duration }] }))); setCaptions([]); setVertical(false); setStatus("Edits reset • imported media kept"); }, [clips.length, setCaptions, setClips, setStatus, setVertical]);
+  const newProject = React.useCallback(async () => { if (projectActionBusy || busy) return; if (clips.length && !window.confirm("Start a new project? The current local project will be cleared.")) return; setProjectActionBusy(true); try { await clearProject(); clips.forEach((clip) => { if (clip.url) URL.revokeObjectURL(clip.url); }); setClips([]); setCaptions([]); setSelectedId(null); setVertical(false); setProjectName(defaultName); setNameDraft(defaultName); try { localStorage.removeItem(NAME_KEY); } catch {} setStatus("New project ready • local workspace cleared"); } catch (error) { console.error(error); setStatus("Could not clear local project storage"); } finally { setProjectActionBusy(false); } }, [busy, clips, projectActionBusy, setCaptions, setClips, setSelectedId, setStatus, setVertical]);
+  const duplicateProject = React.useCallback(async () => { if (projectActionBusy || busy || !clips.length) return; setProjectActionBusy(true); try { const snapshot: Omit<ProjectSnapshot, "version"> = { clips: clips.map((clip) => ({ id: clip.id, duration: clip.duration, name: clip.name, type: clip.file.type, size: clip.file.size, storage: "indexeddb" as const, segments: clip.segments.map((segment) => ({ ...segment })) })), captions: captions.map((caption) => ({ ...caption })), selectedId, vertical }; await saveProject(snapshot, clips.map((clip) => ({ id: clip.id, file: clip.file }))); const nextName = `${projectName} copy`.slice(0, 80); setProjectName(nextName); setNameDraft(nextName); try { localStorage.setItem(NAME_KEY, nextName); } catch {} setStatus(`Project duplicated locally • ${nextName}`); } catch (error) { console.error(error); setStatus("Project duplicate failed • local project was not changed"); } finally { setProjectActionBusy(false); } }, [busy, captions, clips, projectActionBusy, projectName, selectedId, setStatus, vertical]);
+  const duplicateClip = React.useCallback((index: number) => { if (busy || projectActionBusy || index < 0 || index >= clips.length) return; const source = clips[index]; const copy: Clip = { ...source, id: makeId(), name: `${source.name} copy`, segments: source.segments.map((segment) => ({ ...segment })) }; setClips((current) => [...current.slice(0, index + 1), copy, ...current.slice(index + 1)]); setSelectedId(copy.id); setStatus(`Duplicated clip ${index + 1}`); }, [busy, clips, projectActionBusy, setClips, setSelectedId, setStatus]);
+  const renameClip = React.useCallback((index: number) => { if (busy || projectActionBusy || index < 0 || index >= clips.length) return; const clip = clips[index]; const nextName = window.prompt("Clip name", clip.name)?.trim(); if (!nextName || nextName === clip.name) return; setClips((current) => current.map((item, i) => i === index ? { ...item, name: nextName.slice(0, 120) } : item)); setStatus(`Clip renamed • ${nextName.slice(0, 120)}`); }, [busy, clips, projectActionBusy, setClips, setStatus]);
   return { projectName, nameDraft, setNameDraft, renameProject, newProject, duplicateProject, duplicateClip, renameClip, projectActionBusy };
 }
