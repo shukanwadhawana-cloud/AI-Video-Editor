@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { transcribeClip } from "./transcription";
+import { applyPhase6Command } from "./phase6";
 import "./styles.css";
 
 const CORE_BASE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
@@ -64,7 +65,26 @@ function App() {
   const currentTime = videoRef.current?.currentTime ?? 0;
 
   const importVideos = (files: FileList | null) => { if (!files?.length) return; const videoFiles = Array.from(files).filter((file) => file.type.startsWith("video/")); if (!videoFiles.length) return; let remaining = videoFiles.length; const imported: Clip[] = []; videoFiles.forEach((file) => { const url = URL.createObjectURL(file), probe = document.createElement("video"); probe.preload = "metadata"; probe.src = url; probe.onloadedmetadata = () => { const duration = Number.isFinite(probe.duration) ? probe.duration : 0; imported.push({ id: makeId(), file, url, duration, name: file.name, segments: [{ start: 0, end: duration }] }); URL.revokeObjectURL(probe.src); remaining -= 1; if (!remaining) { setClips((current) => { const next = [...current, ...imported]; if (!selectedId && next[0]) setSelectedId(next[0].id); return next; }); setStatus(`${imported.length} video${imported.length === 1 ? "" : "s"} imported • local-only timeline ready`); } }; }); if (inputRef.current) inputRef.current.value = ""; };
-  const applyCommand = () => { const result = parseCommand(command, clips, selectedId, vertical); setClips(result.clips); setSelectedId(result.selectedId); setVertical(result.vertical); setPlan({ label: result.vertical ? "9:16 vertical" : "Original format", vertical: result.vertical }); setStatus(result.message); setCommand(""); };
+  const applyCommand = () => {
+    const result = parseCommand(command, clips, selectedId, vertical);
+    const phase6 = applyPhase6Command(command, result.clips, captions);
+    if (phase6.handled) {
+      setClips(phase6.clips as Clip[]);
+      setCaptions(phase6.captions as Caption[]);
+      setSelectedId(result.selectedId);
+      setVertical(result.vertical);
+      setPlan({ label: result.vertical ? "9:16 vertical" : "Original format", vertical: result.vertical });
+      setStatus(phase6.message);
+      setCommand("");
+      return;
+    }
+    setClips(result.clips);
+    setSelectedId(result.selectedId);
+    setVertical(result.vertical);
+    setPlan({ label: result.vertical ? "9:16 vertical" : "Original format", vertical: result.vertical });
+    setStatus(result.message);
+    setCommand("");
+  };
   const loadFfmpeg = async () => { if (ffmpegRef.current) return ffmpegRef.current; const ffmpeg = new FFmpeg(); setStatus("Loading local video engine…"); await ffmpeg.load({ coreURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.js`, "text/javascript"), wasmURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.wasm`, "application/wasm") }); ffmpegRef.current = ffmpeg; return ffmpeg; };
   const exportCaptions = () => { if (!captions.length) { setStatus("Add at least one caption first"); return; } const blob = new Blob([captionsToSrt(captions)], { type: "application/x-subrip;charset=utf-8" }); const url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = "ai-video-editor-captions.srt"; a.click(); URL.revokeObjectURL(url); setStatus(`Caption track exported • ${captions.length} subtitle${captions.length === 1 ? "" : "s"} • local-only`); };
   const addCaption = () => { const text = captionText.trim(); if (!text || !selectedClip) return; const start = clamp(captionStart, 0, Math.max(0, selectedClip.duration - 0.05)), end = clamp(captionEnd, start + 0.05, selectedClip.duration); setCaptions((current) => [...current, { id: makeId(), clipId: selectedClip.id, start, end, text }].sort((a, b) => a.start - b.start)); setCaptionText(""); setStatus("Caption added locally"); };
