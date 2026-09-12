@@ -1,0 +1,30 @@
+name: Phase 7 Responsive UI
+
+on:
+  push:
+    branches: [main, phase-7-responsive-ui]
+    paths:
+      - "apps/ipad/**"
+      - ".github/workflows/phase7.yml"
+      - "package.json"
+      - "package-lock.json"
+  pull_request:
+    paths:
+      - "apps/ipad/**"
+      - ".github/workflows/phase7.yml"
+      - "package.json"
+      - "package-lock.json"
+
+jobs:
+  responsive-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck --workspace ai-video-editor-ipad
+      - run: npx tsx apps/ipad/scripts/smoke-phase7.ts
+      - run: npm run build --workspace ai-video-editor-ipad
