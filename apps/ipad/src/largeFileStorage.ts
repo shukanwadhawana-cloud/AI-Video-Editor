@@ -17,6 +17,19 @@ function safeName(id: string): string {
   return id.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
+export async function hasLargeMedia(id: string, expectedSize?: number, expectedLastModified?: number): Promise<boolean> {
+  try {
+    const directory = await getMediaDirectory();
+    const handle = await directory.getFileHandle(safeName(id));
+    const file = await handle.getFile();
+    if (expectedSize !== undefined && file.size !== expectedSize) return false;
+    if (expectedLastModified !== undefined && file.lastModified !== expectedLastModified) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function saveLargeMedia(id: string, file: File): Promise<void> {
   const directory = await getMediaDirectory();
   const handle = await directory.getFileHandle(safeName(id), { create: true });
