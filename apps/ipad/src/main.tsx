@@ -139,7 +139,11 @@ function App() {
       probe.onloadedmetadata = () => {
         const duration = Number.isFinite(probe.duration) ? probe.duration : 0;
         imported.push({ id: makeId(), file, url, duration, name: file.name, segments: [{ start: 0, end: duration }] });
-        URL.revokeObjectURL(probe.src);
+        // Keep the object URL alive: it is the source used by the preview <video>.
+        // The previous implementation revoked this URL immediately after metadata probing,
+        // which made the deployed editor appear to import clips while the preview could not play.
+        probe.onloadedmetadata = null;
+        probe.src = "";
         remaining -= 1;
         if (!remaining) {
           setClips((current) => {
@@ -148,6 +152,18 @@ function App() {
             return next;
           });
           setStatus(`${imported.length} video${imported.length === 1 ? "" : "s"} imported • saved locally`);
+        }
+      };
+      probe.onerror = () => {
+        probe.src = "";
+        remaining -= 1;
+        if (!remaining && imported.length) {
+          setClips((current) => {
+            const next = [...current, ...imported];
+            if (!selectedId && next[0]) setSelectedId(next[0].id);
+            return next;
+          });
+          setStatus(`${imported.length} video${imported.length === 1 ? "" : "s"} imported • one file could not be read`);
         }
       };
     });
@@ -208,7 +224,7 @@ function App() {
     try {
       const ffmpeg = await loadFfmpeg();
       const outputParts: string[] = [];
-      setStatus("Rendering clips locally…");
+      setStatus("Rendering clips locally... ");
       for (let clipIndex = 0; clipIndex < clips.length; clipIndex += 1) {
         const clip = clips[clipIndex];
         const inputName = `input-${clipIndex}${clip.file.name.match(/\.[^.]+$/)?.[0] || ".mp4"}`;
