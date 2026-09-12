@@ -20,8 +20,11 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
+      # Keep CI able to bootstrap newly added workspaces while the root lockfile
+      # is being regenerated. Once the generated lockfile is committed, this can
+      # return to `npm ci`.
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Typecheck
         run: npm run typecheck
