@@ -15,7 +15,12 @@ const contracts: Array<[string, (source: string) => boolean]> = [
   ["segment-based cuts", (s) => s.includes("type Segment = { start: number; end: number }") && s.includes("segments: Segment[]")],
   ["segment removal logic", (s) => s.includes("function removeRange(")],
   ["concat export list", (s) => s.includes("concat-list.txt")],
-  ["local concat export", (s) => s.includes('["-f", "concat", "-safe", "0", "-i", "concat-list.txt"]')],
+  ["local concat export", (s) =>
+    s.includes('"-f", "concat"') &&
+    s.includes('"-safe", "0"') &&
+    s.includes('"-i", "concat-list.txt"') &&
+    s.includes('"-c", "copy"')
+  ],
   ["MP4 export", (s) => s.includes("ai-video-editor-project.mp4")],
   ["local FFmpeg engine", (s) => s.includes("new FFmpeg()")],
   ["export action", (s) => s.includes("const exportEdit = async")],
