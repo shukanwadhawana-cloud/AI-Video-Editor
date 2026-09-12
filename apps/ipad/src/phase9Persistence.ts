@@ -38,10 +38,9 @@ function equalState(a: EditorState | null, b: EditorState): boolean {
   return JSON.stringify({ clips: a.clips.map(({ id, duration, name, segments }) => ({ id, duration, name, segments })), captions: a.captions, selectedId: a.selectedId, vertical: a.vertical }) === JSON.stringify({ clips: b.clips.map(({ id, duration, name, segments }) => ({ id, duration, name, segments })), captions: b.captions, selectedId: b.selectedId, vertical: b.vertical });
 }
 
-function toStored(state: EditorState): ProjectSnapshot {
+function toStored(state: EditorState): Omit<ProjectSnapshot, "version"> {
   return {
-    version: 1,
-    clips: state.clips.map((clip) => ({ id: clip.id, duration: clip.duration, name: clip.name, type: clip.file.type, segments: clip.segments })),
+    clips: state.clips.map((clip) => ({ id: clip.id, duration: clip.duration, name: clip.name, type: clip.file.type, size: clip.file.size, storage: "indexeddb", segments: clip.segments })),
     captions: state.captions,
     selectedId: state.selectedId,
     vertical: state.vertical,
@@ -174,5 +173,5 @@ export function usePhase9Persistence(args: PersistenceArgs) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [undo, redo]);
 
-  return { storageReady, canUndo, canRedo, undo, redo, contract: "IndexedDB local project/session persistence • 50-step undo/redo history" };
+  return { storageReady, canUndo, canRedo, undo, redo, contract: "IndexedDB metadata + small-media persistence; large media uses streaming OPFS when supported • 50-step undo/redo history" };
 }
