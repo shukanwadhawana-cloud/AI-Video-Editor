@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - run: npm run typecheck --workspace ai-video-editor-ipad
       - run: npx tsx apps/ipad/scripts/smoke-phase7.ts
       - run: npx tsx apps/ipad/scripts/smoke-phase8.ts
