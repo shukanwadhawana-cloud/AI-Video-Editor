@@ -20,7 +20,7 @@ const checks: Array<[string, boolean]> = [
   ["temporary FFmpeg input cleanup", transcription.includes('ffmpeg.deleteFile(inputName)')],
   ["temporary WAV cleanup", transcription.includes('ffmpeg.deleteFile(audioName)')],
   ["automatic caption UI action", main.includes('const autoCaption = async () =>')],
-  ["automatic caption calls local transcription", main.includes('transcribeClip(ffmpeg, selectedClip.file, start, end, setStatus)')],
+  ["automatic caption calls local transcription", main.includes('transcribeClip(ffmpeg, selectedClip.file, selectedStart, selectedEnd, setStatus)')],
   ["generated captions stored in local state", main.includes('setCaptions((current) => [...current.filter((caption) => caption.clipId !== selectedClip.id), ...next]')],
   ["on-device Whisper status", main.includes('on-device Whisper')],
   ["no remote transcription API", !/openai|anthropic|gemini|replicate/i.test(transcription)],
