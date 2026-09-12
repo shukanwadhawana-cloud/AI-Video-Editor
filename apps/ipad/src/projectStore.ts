@@ -1,4 +1,4 @@
-import { deleteLargeMedia, isLargeMediaFile, loadLargeMedia, saveLargeMedia } from "./largeFileStorage";
+import { deleteLargeMedia, hasLargeMedia, isLargeMediaFile, loadLargeMedia, saveLargeMedia } from "./largeFileStorage";
 
 export type StoredSegment = { start: number; end: number };
 export type StoredClip = { id: string; duration: number; name: string; type: string; size: number; storage: "indexeddb" | "opfs"; segments: StoredSegment[] };
@@ -45,16 +45,16 @@ export async function saveProject(snapshot: Omit<ProjectSnapshot, "version">, fi
 
   const storedClips: StoredClip[] = [];
   for (const { id, file } of files) {
-    const large = isLargeMediaFile(file);
-    if (large) {
+    const clip = snapshot.clips.find((item) => item.id === id);
+    if (!clip) continue;
+    if (isLargeMediaFile(file)) {
       // Large videos bypass IndexedDB and are copied to OPFS as a stream.
-      // This prevents duplicating a 1–2 GB source inside IndexedDB.
-      await saveLargeMedia(id, file);
-      const clip = snapshot.clips.find((item) => item.id === id);
-      if (clip) storedClips.push({ ...clip, size: file.size, storage: "opfs" });
+      // Avoid rewriting the same 1–2 GB source on every metadata/history change.
+      const alreadyStored = await hasLargeMedia(id, file.size, file.lastModified);
+      if (!alreadyStored) await saveLargeMedia(id, file);
+      storedClips.push({ ...clip, size: file.size, storage: "opfs" });
     } else {
-      const clip = snapshot.clips.find((item) => item.id === id);
-      if (clip) storedClips.push({ ...clip, size: file.size, storage: "indexeddb" });
+      storedClips.push({ ...clip, size: file.size, storage: "indexeddb" });
     }
   }
 
@@ -63,7 +63,7 @@ export async function saveProject(snapshot: Omit<ProjectSnapshot, "version">, fi
     const tx = db.transaction([PROJECTS_STORE, FILES_STORE], "readwrite");
     tx.objectStore(PROJECTS_STORE).put({ ...snapshot, version: 2, clips: storedClips }, CURRENT_PROJECT);
     const fileStore = tx.objectStore(FILES_STORE);
-    files.filter(({ id, file }) => !isLargeMediaFile(file)).forEach(({ id, file }) => fileStore.put({ kind: "file", file } satisfies StoredFileRecord, id));
+    files.filter(({ file }) => !isLargeMediaFile(file)).forEach(({ id, file }) => fileStore.put({ kind: "file", file } satisfies StoredFileRecord, id));
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error || new Error("Unable to save project"));
     tx.onabort = () => reject(tx.error || new Error("Project save aborted"));
