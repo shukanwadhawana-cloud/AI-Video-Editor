@@ -78,9 +78,12 @@ async function main() {
   console.log("4. cancel the running export...");
   const cancelResult = await call<{ canceled: boolean; job?: Job }>("cancel_job", { jobId: started.jobId });
   check(cancelResult.canceled, "cancel_job canceled the running job");
-  // Give the ffmpeg process a moment to die and cleanup to run.
+  // Give ffmpeg enough time to terminate and for the executor's close-aware
+  // cancellation cleanup to delete the partial output. This is intentionally
+  // longer than the executor's bounded 10s close wait because CI machines can
+  // take several seconds to reap a terminated ffmpeg process.
   let final: Job | undefined;
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 60; i++) {
     await sleep(250);
     final = (await call<{ jobs: Job[] }>("list_jobs", {})).jobs.find((j) => j.id === started.jobId);
     if (final && final.status !== "running" && !existsSync(outPath)) break;
