@@ -1,10 +1,11 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import { toBlobURL } from "@ffmpeg/util";
 import { transcribeClip } from "./transcription";
 import { applyPhase6Command } from "./phase6";
 import { usePhase9Persistence } from "./phase9Persistence";
+import { withMountedInput } from "./largeMediaFfmpeg";
 import "./styles.css";
 
 const CORE_BASE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
@@ -106,15 +107,7 @@ function App() {
   const ffmpegRef = React.useRef<FFmpeg | null>(null);
 
   const { canUndo, canRedo, undo, redo, storageReady } = usePhase9Persistence({
-    clips,
-    captions,
-    selectedId,
-    vertical,
-    setClips,
-    setCaptions,
-    setSelectedId,
-    setVertical,
-    setStatus,
+    clips, captions, selectedId, vertical, setClips, setCaptions, setSelectedId, setVertical, setStatus,
   });
 
   const selectedIndex = selectedId ? clips.findIndex((clip) => clip.id === selectedId) : -1;
@@ -139,9 +132,6 @@ function App() {
       probe.onloadedmetadata = () => {
         const duration = Number.isFinite(probe.duration) ? probe.duration : 0;
         imported.push({ id: makeId(), file, url, duration, name: file.name, segments: [{ start: 0, end: duration }] });
-        // Keep the object URL alive: it is the source used by the preview <video>.
-        // The previous implementation revoked this URL immediately after metadata probing,
-        // which made the deployed editor appear to import clips while the preview could not play.
         probe.onloadedmetadata = null;
         probe.src = "";
         remaining -= 1;
@@ -208,12 +198,16 @@ function App() {
     setBusy(true);
     try {
       const ffmpeg = await loadFfmpeg();
-      const generated = await transcribeClip(ffmpeg, selectedClip.file, selectedStart, selectedEnd, setStatus);
+      const generated = await withMountedInput(ffmpeg, selectedClip.file, `stt-${selectedClip.id}`, (inputPath) =>
+        transcribeClip(ffmpeg, inputPath, selectedStart, selectedEnd, setStatus)
+      );
       const next = generated.map((caption) => ({ id: makeId(), clipId: selectedClip.id, ...caption }));
       setCaptions((current) => [...current.filter((caption) => caption.clipId !== selectedClip.id), ...next].sort((a, b) => a.start - b.start));
       setStatus(next.length ? `Automatic captions ready • ${next.length} timed segments • on-device Whisper` : "Whisper found no speech in the selected clip");
-    } catch (error) { console.error(error); setStatus("Automatic captions failed. Try a shorter clip or use manual captions."); }
-    finally { setBusy(false); }
+    } catch (error) {
+      console.error(error);
+      setStatus(error instanceof Error ? `Automatic captions failed • ${error.message}` : "Automatic captions failed");
+    } finally { setBusy(false); }
   };
 
   const deleteCaption = (id: string) => { setCaptions((current) => current.filter((caption) => caption.id !== id)); setStatus("Caption removed"); };
@@ -224,31 +218,47 @@ function App() {
     try {
       const ffmpeg = await loadFfmpeg();
       const outputParts: string[] = [];
-      setStatus("Rendering clips locally... ");
+      setStatus("Rendering locally without copying source videos into FFmpeg memory…");
       for (let clipIndex = 0; clipIndex < clips.length; clipIndex += 1) {
         const clip = clips[clipIndex];
-        const inputName = `input-${clipIndex}${clip.file.name.match(/\.[^.]+$/)?.[0] || ".mp4"}`;
-        await ffmpeg.writeFile(inputName, await fetchFile(clip.file));
-        for (let segmentIndex = 0; segmentIndex < clip.segments.length; segmentIndex += 1) {
-          const segment = clip.segments[segmentIndex];
-          const partName = `part-${clipIndex}-${segmentIndex}.mp4`;
-          const args = ["-ss", segment.start.toFixed(3), "-i", inputName, "-t", (segment.end - segment.start).toFixed(3), "-map", "0:v:0?", "-map", "0:a:0?"];
-          if (vertical) args.push("-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920");
-          args.push("-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-c:a", "aac", "-movflags", "+faststart", partName);
-          await ffmpeg.exec(args); outputParts.push(partName);
-        }
+        await withMountedInput(ffmpeg, clip.file, `export-${clip.id}`, async (inputPath) => {
+          for (let segmentIndex = 0; segmentIndex < clip.segments.length; segmentIndex += 1) {
+            const segment = clip.segments[segmentIndex];
+            const partName = `part-${clipIndex}-${segmentIndex}.mp4`;
+            const args = ["-ss", segment.start.toFixed(3), "-i", inputPath, "-t", (segment.end - segment.start).toFixed(3), "-map", "0:v:0?", "-map", "0:a:0?"];
+            if (vertical) args.push("-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920");
+            args.push("-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-c:a", "aac", "-movflags", "+faststart", partName);
+            await ffmpeg.exec(args, 300000);
+            outputParts.push(partName);
+          }
+        });
       }
-      await ffmpeg.writeFile("concat-list.txt", new TextEncoder().encode(outputParts.map((name) => `file '${name}'`).join("\n")));
+      if (!outputParts.length) throw new Error("No editable video segments were produced");
       const finalName = "ai-video-editor-project.mp4";
-      await ffmpeg.exec(["-f", "concat", "-safe", "0", "-i", "concat-list.txt", "-c", "copy", "-movflags", "+faststart", finalName]);
-      const data = await ffmpeg.readFile(finalName);
-      const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
-      const blob = new Blob([bytes as unknown as BlobPart], { type: "video/mp4" });
-      const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `ai-video-editor-${vertical ? "9x16" : "edit"}.mp4`; a.click(); URL.revokeObjectURL(url);
+      if (outputParts.length === 1) {
+        setStatus("Finalizing export…");
+        const data = await ffmpeg.readFile(outputParts[0]);
+        const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
+        const blob = new Blob([bytes as unknown as BlobPart], { type: "video/mp4" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a"); a.href = url; a.download = `ai-video-editor-${vertical ? "9x16" : "edit"}.mp4`; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else {
+        await ffmpeg.writeFile("concat-list.txt", new TextEncoder().encode(outputParts.map((name) => `file '${name}'`).join("\n")));
+        await ffmpeg.exec(["-f", "concat", "-safe", "0", "-i", "concat-list.txt", "-c", "copy", "-movflags", "+faststart", finalName], 300000);
+        const data = await ffmpeg.readFile(finalName);
+        const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
+        const blob = new Blob([bytes as unknown as BlobPart], { type: "video/mp4" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a"); a.href = url; a.download = `ai-video-editor-${vertical ? "9x16" : "edit"}.mp4`; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
       if (captions.length) exportCaptions();
       setStatus(`Export complete • ${clips.length} clip${clips.length === 1 ? "" : "s"} combined locally`);
-    } catch (error) { console.error(error); setStatus("Export failed. Try fewer/smaller clips on this device."); }
-    finally { setBusy(false); }
+    } catch (error) {
+      console.error(error);
+      setStatus(error instanceof Error ? `Export failed • ${error.message}` : "Export failed");
+    } finally { setBusy(false); }
   };
 
   const moveClip = (index: number, direction: -1 | 1) => {
@@ -271,7 +281,7 @@ function App() {
 
   return <main className="app">
     <header className="topbar">
-      <div><div className="brand">AI Video Editor</div><div className="sub">Private • local-first • phones & tablets • Phase 9 project persistence</div></div>
+      <div><div className="brand">AI Video Editor</div><div className="sub">Private • local-first • phones & tablets • large-file WORKERFS mode</div></div>
       <div className="top-actions">
         <button onClick={undo} disabled={!canUndo || busy} title="Undo (⌘/Ctrl+Z)">↶ Undo</button>
         <button onClick={redo} disabled={!canRedo || busy} title="Redo (⌘/Ctrl+Shift+Z)">↷ Redo</button>
