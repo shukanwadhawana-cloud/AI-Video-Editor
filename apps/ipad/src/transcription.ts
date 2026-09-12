@@ -10,19 +10,24 @@ type WhisperResult = { text?: string; chunks?: Array<{ timestamp?: [number | nul
 
 async function getTranscriber(onProgress?: (message: string) => void) {
   if (!transcriberPromise) {
+    // Safari/WebGPU can initialize successfully but stall during first inference.
+    // Prefer the WASM CPU backend for predictable local execution, then use WebGPU
+    // only as a fallback if WASM is unavailable.
     onProgress?.("Loading local Whisper model… first run downloads and caches it on-device.");
     transcriberPromise = pipeline("automatic-speech-recognition", MODEL, {
-      device: "webgpu",
+      device: "wasm",
       dtype: "q4",
       progress_callback: (progress: { status?: string; progress?: number }) => {
         if (progress.status === "progress" && typeof progress.progress === "number") onProgress?.(`Downloading Whisper model • ${Math.round(progress.progress)}%`);
       },
     } as any) as Promise<any>;
   }
-  try { return await transcriberPromise; } catch {
+  try {
+    return await transcriberPromise;
+  } catch {
     transcriberPromise = null;
-    onProgress?.("WebGPU unavailable; retrying Whisper on WebAssembly CPU…");
-    transcriberPromise = pipeline("automatic-speech-recognition", MODEL, { device: "wasm", dtype: "q4" } as any) as Promise<any>;
+    onProgress?.("WASM unavailable; retrying Whisper with WebGPU…");
+    transcriberPromise = pipeline("automatic-speech-recognition", MODEL, { device: "webgpu", dtype: "q4" } as any) as Promise<any>;
     return await transcriberPromise;
   }
 }
