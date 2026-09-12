@@ -27,4 +27,5 @@ jobs:
       - run: npm ci
       - run: npm run typecheck --workspace ai-video-editor-ipad
       - run: npx tsx apps/ipad/scripts/smoke-phase7.ts
+      - run: npx tsx apps/ipad/scripts/smoke-phase8.ts
       - run: npm run build --workspace ai-video-editor-ipad
