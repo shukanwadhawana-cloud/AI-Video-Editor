@@ -2,7 +2,7 @@
   "name": "ai-native-video-editor",
   "version": "1.0.5",
   "private": true,
-  "description": "An open-source video editor built to be operated by AI, not humans. Exposes itself as an MCP server so any MCP-compatible AI client can drive real, local FFmpeg-based edits.",
+  "description": "An open-source local-first video editor with an iPad-first PWA and AI editing engine.",
   "license": "GPL-3.0-or-later",
   "type": "module",
   "engines": {
@@ -13,9 +13,11 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @aive/core --workspace @aive/mcp && npm run build:renderer --workspace synthcut-by-relo",
-    "typecheck": "tsc -b packages/core packages/mcp && npm run typecheck --workspace synthcut-by-relo",
+    "build": "npm run build --workspace @aive/core --workspace @aive/mcp && npm run build:renderer --workspace synthcut-by-relo && npm run build --workspace ai-video-editor-ipad",
+    "typecheck": "tsc -b packages/core packages/mcp && npm run typecheck --workspace synthcut-by-relo && npm run typecheck --workspace ai-video-editor-ipad",
     "start": "npm run start --workspace synthcut-by-relo",
+    "ipad": "npm run dev --workspace ai-video-editor-ipad",
+    "build:ipad": "npm run build --workspace ai-video-editor-ipad",
     "core": "npm run start --workspace @aive/core",
     "mcp": "npm run start --workspace @aive/mcp",
     "clean": "node -e \"require('fs').rmSync('node_modules',{recursive:true,force:true})\""
@@ -24,8 +26,8 @@
     "video-editor",
     "ffmpeg",
     "mcp",
-    "model-context-protocol",
     "ai",
-    "electron"
+    "ipad",
+    "pwa"
   ]
 }
