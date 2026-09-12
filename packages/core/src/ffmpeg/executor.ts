@@ -45,6 +45,11 @@ export async function runFfmpeg(args: string[], opts: FfmpegRunOptions = {}): Pr
     cwd: opts.cwd,
   });
 
+  let childClosed = false;
+  child.once("close", () => {
+    childClosed = true;
+  });
+
   if (opts.onProgress && opts.totalDuration && opts.totalDuration > 0 && child.stdout) {
     let buf = "";
     child.stdout.on("data", (chunk: Buffer) => {
@@ -70,16 +75,20 @@ export async function runFfmpeg(args: string[], opts: FfmpegRunOptions = {}): Pr
   } catch (err: unknown) {
     const e = err as { stderr?: string; shortMessage?: string; message?: string; isCanceled?: boolean };
     if (e.isCanceled) {
-      if (child.exitCode === null) {
+      // execa can reject its promise as soon as cancellation is requested,
+      // while ffmpeg is still unwinding and closing its output file. Track
+      // the close event from the start so cleanup never races that close.
+      if (!childClosed) {
         await new Promise<void>((resolve) => {
           let settled = false;
           const finish = () => {
             if (settled) return;
             settled = true;
+            clearTimeout(timer);
             resolve();
           };
           child.once("close", finish);
-          const timer = setTimeout(finish, 5000);
+          const timer = setTimeout(finish, 10000);
           timer.unref?.();
         });
       }
