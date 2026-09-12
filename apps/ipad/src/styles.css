@@ -13,14 +13,14 @@ input { max-width: 100%; }
 .sub { margin-top: 3px; color: #92929b; font-size: 11px; }
 .import, .primary { background: #f5f5f7; color: #111116; border-radius: 12px; min-height: 44px; padding: 11px 15px; font-weight: 700; }
 .import:disabled, .primary:disabled { opacity: .45; }
-.command-bar, .caption-panel, .preview-card, .controls, .timeline { border: 1px solid #25252c; background: #111116; border-radius: 18px; box-shadow: 0 12px 40px #0005; }
+.command-bar, .caption-panel, .preview-card, .controls, .timeline, .project-panel { border: 1px solid #25252c; background: #111116; border-radius: 18px; box-shadow: 0 12px 40px #0005; }
 .command-bar { padding: 13px; display: flex; flex-direction: column; gap: 9px; }
 .command-label { font-size: 13px; color: #b8b8c0; font-weight: 650; }
 .command-row { display: flex; gap: 8px; min-width: 0; }
 .command-row input { flex: 1; min-width: 0; height: 44px; border: 1px solid #34343d; border-radius: 11px; background: #0b0b0f; color: #f5f5f7; padding: 10px 12px; outline: none; }
-.command-row input:focus, .caption-editor input:focus { border-color: #777780; }
-.command-row button, .chips button, .format-button, .caption-editor button { background: #24242b; color: #f5f5f7; border-radius: 10px; min-height: 42px; padding: 9px 12px; font-weight: 650; }
-.command-row button:disabled, .chips button:disabled, .format-button:disabled, .caption-editor button:disabled { opacity: .45; }
+.command-row input:focus, .caption-editor input:focus, .project-name-input:focus { border-color: #777780; }
+.command-row button, .chips button, .format-button, .caption-editor button, .project-panel button { background: #24242b; color: #f5f5f7; border-radius: 10px; min-height: 42px; padding: 9px 12px; font-weight: 650; }
+.command-row button:disabled, .chips button:disabled, .format-button:disabled, .caption-editor button:disabled, .project-panel button:disabled { opacity: .45; }
 .chips { display: flex; gap: 7px; flex-wrap: wrap; overflow-x: auto; padding-bottom: 1px; }
 .chips button { color: #b8b8c0; font-size: 11px; min-height: 36px; padding: 7px 9px; white-space: nowrap; }
 .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 290px); gap: 12px; min-height: 0; flex: 1; }
@@ -42,6 +42,11 @@ input { max-width: 100%; }
 input[type=range] { width: 100%; min-height: 32px; accent-color: #fff; touch-action: pan-x; }
 .primary { margin-top: auto; padding: 12px 14px; }
 .notice { color: #777780; font-size: 11px; line-height: 1.45; }
+.project-panel { padding: 11px 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.project-label { color: #777780; font-size: 11px; font-weight: 650; }
+.project-name-input { flex: 1 1 180px; min-width: 120px; height: 40px; border: 1px solid #34343d; border-radius: 10px; background: #0b0b0f; color: #f5f5f7; padding: 8px 10px; outline: none; }
+.project-panel button { min-height: 40px; font-size: 11px; }
+.project-save { margin-left: auto; color: #8f8f99; font-size: 10px; white-space: nowrap; }
 .caption-panel { min-width: 0; padding: 14px; }
 .caption-editor { display: grid; grid-template-columns: minmax(180px, 1fr) 82px 82px auto auto; gap: 7px; margin-top: 10px; }
 .caption-editor input { min-width: 0; height: 42px; border: 1px solid #34343d; border-radius: 10px; background: #0b0b0f; color: #f5f5f7; padding: 9px 10px; outline: none; }
@@ -67,14 +72,11 @@ input[type=range] { width: 100%; min-height: 32px; accent-color: #fff; touch-act
 .timeline-empty { padding: 18px; text-align: center; color: #777780; font-size: 12px; border: 1px dashed #303039; border-radius: 12px; }
 footer { color: #777780; font-size: 12px; min-height: 18px; padding: 0 2px; }
 
-/* Tablet landscape: keep the editing workstation dense and touch-friendly. */
 @media (min-width: 901px) and (max-width: 1280px) {
   .workspace { grid-template-columns: minmax(0, 1fr) minmax(230px, 270px); }
   .controls { padding: 14px; }
   .caption-editor { grid-template-columns: minmax(150px, 1fr) 76px 76px auto auto; }
 }
-
-/* Small tablets and large phones. */
 @media (max-width: 900px) {
   .workspace { grid-template-columns: 1fr; }
   .preview-card { min-height: 46dvh; }
@@ -82,14 +84,12 @@ footer { color: #777780; font-size: 12px; min-height: 18px; padding: 0 2px; }
   .caption-editor { grid-template-columns: minmax(0, 1fr) 78px 78px; }
   .caption-editor button { grid-column: span 1; }
 }
-
-/* Phones: single-column, thumb-friendly controls and no horizontal overflow. */
 @media (max-width: 600px) {
   .app { gap: 9px; padding-left: max(9px, env(safe-area-inset-left)); padding-right: max(9px, env(safe-area-inset-right)); }
   .topbar { align-items: flex-start; }
   .sub { max-width: 58vw; line-height: 1.25; }
   .import { min-height: 42px; padding: 9px 11px; white-space: nowrap; }
-  .command-bar, .caption-panel, .preview-card, .controls, .timeline { border-radius: 14px; }
+  .command-bar, .caption-panel, .preview-card, .controls, .timeline, .project-panel { border-radius: 14px; }
   .command-row button { min-width: 74px; }
   .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .chips::-webkit-scrollbar { display: none; }
@@ -99,6 +99,10 @@ footer { color: #777780; font-size: 12px; min-height: 18px; padding: 0 2px; }
   .caption-editor { grid-template-columns: 1fr 1fr; }
   .caption-editor input:first-child { grid-column: 1 / -1; }
   .caption-editor button { min-height: 44px; }
+  .project-panel { align-items: stretch; }
+  .project-name-input { flex-basis: 100%; }
+  .project-panel button { flex: 1 1 calc(50% - 8px); }
+  .project-save { margin-left: 0; width: 100%; }
   .caption-row { grid-template-columns: 24px minmax(0, 1fr) 34px; }
   .caption-row > span:nth-child(3) { display: none; }
   .clip-row { grid-template-columns: 26px minmax(0, 1fr) auto; }
@@ -106,8 +110,6 @@ footer { color: #777780; font-size: 12px; min-height: 18px; padding: 0 2px; }
   .timeline-head { align-items: flex-start; flex-direction: column; gap: 3px; }
   .timeline-head span:last-child { text-align: left; }
 }
-
-/* Very narrow phones. */
 @media (max-width: 380px) {
   .brand { font-size: 17px; }
   .sub { font-size: 10px; }
@@ -117,7 +119,6 @@ footer { color: #777780; font-size: 12px; min-height: 18px; padding: 0 2px; }
   .clip-actions { gap: 2px; }
   .clip-actions button { width: 34px; height: 34px; }
 }
-
 @media (orientation: portrait) and (min-width: 601px) and (max-width: 1100px) {
   .workspace { grid-template-columns: 1fr; }
   .preview-card { min-height: 52dvh; }
