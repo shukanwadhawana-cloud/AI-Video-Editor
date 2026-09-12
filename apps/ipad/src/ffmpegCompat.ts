@@ -1,13 +1,26 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { toBlobURL } from "@ffmpeg/util";
 
-const ESM_BASE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
+// Host the single-thread FFmpeg core on the same origin as the PWA.
+// This avoids the Safari/Vite worker + blob URL failure mode where ffmpeg.load()
+// can remain pending forever. The build step downloads these two files into /public.
+const LOCAL_CORE_URL = "/ffmpeg-core.js";
+const LOCAL_WASM_URL = "/ffmpeg-core.wasm";
 const originalLoad = FFmpeg.prototype.load;
 
 FFmpeg.prototype.load = async function (config: any = {}) {
-  const coreURL = await toBlobURL(`${ESM_BASE}/ffmpeg-core.js`, "text/javascript");
-  const wasmURL = await toBlobURL(`${ESM_BASE}/ffmpeg-core.wasm`, "application/wasm");
-  return originalLoad.call(this, { ...config, coreURL, wasmURL });
+  const loadPromise = originalLoad.call(this, {
+    ...config,
+    coreURL: LOCAL_CORE_URL,
+    wasmURL: LOCAL_WASM_URL,
+  });
+
+  // Never leave the UI permanently locked in "Working…" if the worker cannot start.
+  return await Promise.race([
+    loadPromise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("FFmpeg core failed to start within 60 seconds")), 60000),
+    ),
+  ]);
 };
 
 // iOS Safari may ignore programmatic <a download> for blob URLs.
