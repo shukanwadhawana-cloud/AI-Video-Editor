@@ -1,0 +1,34 @@
+name: Apply Phase 6 Integration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/ipad/scripts/apply-phase6.mjs"
+      - "apps/ipad/src/phase6.ts"
+      - ".github/workflows/apply-phase6.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+      - name: Apply Phase 6 integration
+        run: node apps/ipad/scripts/apply-phase6.mjs
+      - name: Commit integration
+        run: |
+          if git diff --quiet; then
+            echo "Phase 6 integration already applied"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/ipad/src/main.tsx
+          git commit -m "Phase 6: integrate local AI editing commands"
+          git push
