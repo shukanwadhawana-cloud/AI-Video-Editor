@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: phase6-integration
+  cancel-in-progress: false
+
 jobs:
   patch:
     runs-on: ubuntu-latest
@@ -19,16 +23,35 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.12.0
-      - name: Apply Phase 6 integration
-        run: node apps/ipad/scripts/apply-phase6.mjs
-      - name: Commit integration
+      - name: Apply Phase 6 integration and push safely
         run: |
-          if git diff --quiet; then
-            echo "Phase 6 integration already applied"
-            exit 0
-          fi
+          set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/ipad/src/main.tsx
-          git commit -m "Phase 6: integrate local AI editing commands"
-          git push
+
+          for attempt in 1 2 3; do
+            echo "Phase 6 integration attempt $attempt"
+            git fetch origin main
+            git reset --hard origin/main
+
+            node apps/ipad/scripts/apply-phase6.mjs
+
+            if git diff --quiet; then
+              echo "Phase 6 integration already applied"
+              exit 0
+            fi
+
+            git add apps/ipad/src/main.tsx
+            git commit -m "Phase 6: integrate local AI editing commands"
+
+            if git push origin HEAD:main; then
+              echo "Phase 6 integration pushed successfully"
+              exit 0
+            fi
+
+            echo "Remote main changed during push; retrying against latest origin/main"
+            git reset --hard origin/main
+          done
+
+          echo "Failed to push Phase 6 integration after 3 synchronized attempts"
+          exit 1
