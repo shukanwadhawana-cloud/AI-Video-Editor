@@ -150,8 +150,8 @@ function App() {
       await ffmpeg.exec(args);
 
       const data = await ffmpeg.readFile(outputName);
-      const bytes = data instanceof Uint8Array ? data : new Uint8Array(data as ArrayBuffer);
-      const blob = new Blob([bytes], { type: "video/mp4" });
+      const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
+      const blob = new Blob([bytes as unknown as BlobPart], { type: "video/mp4" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
