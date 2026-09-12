@@ -2781,7 +2781,7 @@ export class EditorEngine extends EventEmitter {
       // delete a few times: on Windows the OS can hold the file handle
       // briefly after the killed process exits.
       const deletePartial = async () => {
-        for (let attempt = 0; attempt < 5; attempt++) {
+        for (let attempt = 0; attempt < 50; attempt++) {
           try {
             await rm(outputPath, { force: true });
             return;
