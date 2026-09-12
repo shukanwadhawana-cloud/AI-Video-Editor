@@ -2,7 +2,7 @@ name: Phase 7 Responsive UI
 
 on:
   push:
-    branches: [main, phase-7-responsive-ui, phase-8-pwa-hardening-clean]
+    branches: [main, phase-7-responsive-ui, phase-8-pwa-hardening-clean, phase-9-project-persistence-undo-redo]
     paths:
       - "apps/ipad/**"
       - ".github/workflows/phase7.yml"
@@ -28,4 +28,5 @@ jobs:
       - run: npm run typecheck --workspace ai-video-editor-ipad
       - run: npx tsx apps/ipad/scripts/smoke-phase7.ts
       - run: npx tsx apps/ipad/scripts/smoke-phase8.ts
+      - run: npx tsx apps/ipad/scripts/smoke-phase9.ts
       - run: npm run build --workspace ai-video-editor-ipad
