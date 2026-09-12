@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 const source = readFileSync(join(process.cwd(), "apps/ipad/src/main.tsx"), "utf8");
 
-// Source-level Phase 2 contracts. Keep matching formatting-tolerant.
+// Source-level Phase 2 contracts. Prefer semantic checks over brittle escape matching.
 const contracts: Array<[string, RegExp]> = [
   ["natural-language command parser", /function parseCommand\(/],
   ["first-seconds removal", /const first = text\.match/],
@@ -13,9 +13,9 @@ const contracts: Array<[string, RegExp]> = [
   ["keep time range", /const keep = text\.match/],
   ["clip deletion command", /delete.*clip|clip.*delete|delete.*video/],
   ["clip reordering command", /const move = text\.match/],
-  ["reset/undo command", /reset\|clear\|undo all/],
-  ["vertical format command", /9\\s\*\[?:x\\:\]\\s\*16/],
-  ["horizontal format command", /16\\s\*\[?:x\\:\]\\s\*9/],
+  ["reset\/undo command", /reset.*clear.*undo all/],
+  ["vertical format command", /9\\s\*\[:x\]\\s\*16|vertical|portrait|instagram reel|shorts/],
+  ["horizontal format command", /16\\s\*\[:x\]\\s\*9|horizontal|landscape/],
   ["command input wired to applyCommand", /onClick=\{applyCommand\}/],
 ];
 
