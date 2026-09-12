@@ -1,0 +1,29 @@
+name: Phase 6 Local AI Editing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/ipad/src/phase6.ts"
+      - "apps/ipad/src/main.tsx"
+      - "apps/ipad/scripts/smoke-phase6.ts"
+      - "apps/ipad/package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/phase6.yml"
+
+jobs:
+  phase6-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+      - name: Install dependencies
+        run: npm install
+      - name: Typecheck
+        run: npm run typecheck --workspace=ai-video-editor-ipad
+      - name: Build
+        run: npm run build --workspace=ai-video-editor-ipad
+      - name: Smoke — iPad Phase 6 local AI editing contract
+        run: npx tsx apps/ipad/scripts/smoke-phase6.ts
