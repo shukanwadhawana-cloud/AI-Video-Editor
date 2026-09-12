@@ -2,7 +2,7 @@
   "name": "ai-native-video-editor",
   "version": "1.0.5",
   "private": true,
-  "description": "An open-source local-first video editor with an iPad-first PWA and AI editing engine.",
+  "description": "An open-source local-first video editor with a responsive phone and tablet PWA and AI editing engine.",
   "license": "GPL-3.0-or-later",
   "type": "module",
   "engines": {
@@ -27,7 +27,9 @@
     "ffmpeg",
     "mcp",
     "ai",
-    "ipad",
+    "mobile",
+    "tablet",
+    "phone",
     "pwa"
   ]
 }
