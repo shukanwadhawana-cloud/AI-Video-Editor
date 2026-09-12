@@ -39,6 +39,9 @@ jobs:
       - name: Smoke — iPad Phase 3 timeline and export contract
         run: npx tsx apps/ipad/scripts/smoke-phase3.ts
 
+      - name: Smoke — iPad Phase 4 captions and SRT contract
+        run: npx tsx apps/ipad/scripts/smoke-phase4.ts
+
       # The media-free / self-synthesizing smoke subset (no model downloads).
       - name: Smoke — compositor plan (pure logic)
         run: npx tsx apps/desktop/scripts/smoke-composite.ts
