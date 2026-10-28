@@ -14,7 +14,7 @@ export function slugify(value) {
   return String(value)
     .toLowerCase()
     .normalize('NFKD')
-    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 48) || 'hyperframes-video';
@@ -40,7 +40,7 @@ export function buildComposition({ title, scenes, durationSeconds, aspectRatio, 
   const width = dimensions.width;
   const height = dimensions.height;
   const vertical = height > width;
-  const scale = vertical ? 1.18 : 1;
+
   const sceneMarkup = scenes.map((scene, index) => {
     const heading = escapeHtml(scene.heading);
     const body = escapeHtml(scene.body || '');
@@ -55,8 +55,8 @@ export function buildComposition({ title, scenes, durationSeconds, aspectRatio, 
       '  </div>',
       '  <div class="corner-mark">H</div>',
       '</section>'
-    ].join('\\n');
-  }).join('\\n');
+    ].join('\n');
+  }).join('\n');
 
   const animationSteps = scenes.map((scene, index) => {
     const start = Number((index * segment).toFixed(3));
@@ -67,8 +67,8 @@ export function buildComposition({ title, scenes, durationSeconds, aspectRatio, 
     return [
       "  tl.fromTo('#scene-" + index + "', { autoAlpha: 0, y: 34, scale: 0.985 }, { autoAlpha: 1, y: 0, scale: 1, duration: " + enter.toFixed(3) + ", ease: 'power3.out' }, " + start + ');',
       "  tl.to('#scene-" + index + "', { autoAlpha: 0, y: -12, duration: " + exit.toFixed(3) + ", ease: 'power2.in' }, " + leaveAt + ');'
-    ].join('\\n');
-  }).join('\\n');
+    ].join('\n');
+  }).join('\n');
 
   return [
     '<!doctype html>',
@@ -110,20 +110,20 @@ export function buildComposition({ title, scenes, durationSeconds, aspectRatio, 
     '  </script>',
     '</body>',
     '</html>'
-  ].join('\\n');
+  ].join('\n');
 }
 
 export function validateCustomComposition(html, durationSeconds, aspectRatio) {
-  if (!/<html[\\s>]/i.test(html) || !/<body[\\s>]/i.test(html)) {
+  if (!/<html[\s>]/i.test(html) || !/<body[\s>]/i.test(html)) {
     throw new Error('composition_html must be a complete HTML document with html and body elements.');
   }
-  if (!/data-composition-id\\s*=\\s*["'][^"']+["']/i.test(html)) {
+  if (!/data-composition-id\s*=\s*["'][^"']+["']/i.test(html)) {
     throw new Error('composition_html needs a root element with data-composition-id.');
   }
-  if (!/data-width\\s*=\\s*["']\\d+["']/i.test(html) || !/data-height\\s*=\\s*["']\\d+["']/i.test(html)) {
+  if (!/data-width\s*=\s*["']\d+["']/i.test(html) || !/data-height\s*=\s*["']\d+["']/i.test(html)) {
     throw new Error('composition_html needs data-width and data-height on its composition root.');
   }
-  if (!/data-duration\\s*=\\s*["']\\d+(?:\\.\\d+)?["']/i.test(html)) {
+  if (!/data-duration\s*=\s*["']\d+(?:\.\d+)?["']/i.test(html)) {
     throw new Error('composition_html needs a fixed data-duration on its composition root.');
   }
   const dimensions = getDimensions(aspectRatio);
