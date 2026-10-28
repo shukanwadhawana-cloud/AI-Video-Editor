@@ -1,4 +1,4 @@
-import type { FFmpeg } from "@ffmpeg/ffmpeg";
+import { FFFSType, type FFmpeg } from "@ffmpeg/ffmpeg";
 
 /**
  * Mount a user File through WORKERFS instead of copying its bytes into MEMFS.
@@ -16,7 +16,7 @@ export async function withMountedInput<T>(
 
   await ffmpeg.createDir(mountPoint);
   try {
-    await ffmpeg.mount("WORKERFS", { files: [file] }, mountPoint);
+    await ffmpeg.mount(FFFSType.WORKERFS, { files: [file] }, mountPoint);
     return await task(inputPath);
   } catch (error) {
     try { await ffmpeg.unmount(mountPoint); } catch {}
