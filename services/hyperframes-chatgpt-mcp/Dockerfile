@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY package.json ./
-RUN npm install --omit=dev --no-audit --no-fund
+RUN npm install --omit=dev --ignore-scripts --no-audit --no-fund
 COPY src ./src
 
 RUN mkdir -p /data/projects
